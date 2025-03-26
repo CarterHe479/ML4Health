@@ -10,6 +10,7 @@ def save_dataset_split(root_dir, n_samples=1000, test_ratio=0.2, random_seed=42)
     
     # Random sample n_samples dish IDs
     random.seed(random_seed)
+    print(f'Sampling {n_samples} from {len(all_dish_ids)} dish IDs')
     sampled_ids = random.sample(all_dish_ids, min(n_samples, len(all_dish_ids)))
     
     # Split into train and test
@@ -32,4 +33,4 @@ def save_dataset_split(root_dir, n_samples=1000, test_ratio=0.2, random_seed=42)
 
 if __name__ == '__main__':
     root_dir = '/Users/liwuchen/Documents/nutrition5k_dataset'
-    save_dataset_split(root_dir, n_samples=1000, test_ratio=0.2)
+    save_dataset_split(root_dir, n_samples=500, test_ratio=0.2)

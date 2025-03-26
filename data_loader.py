@@ -4,14 +4,14 @@ import pandas as pd
 from PIL import Image
 import torch
 from torch.utils.data import Dataset
-from torchvision import transforms
 from sklearn.model_selection import train_test_split
 
 class Nutrition5KDataset(Dataset):
-    def __init__(self, root_dir, split='train', transform=None, val_ratio=0.2, random_seed=42):
+    def __init__(self, root_dir, split='train', rgb_transform=None, depth_transform=None, val_ratio=0.2, random_seed=42):
         self.root_dir = root_dir
         self.split = split
-        self.transform = transform
+        self.rgb_transform = rgb_transform
+        self.depth_transform = depth_transform
         
         # Load split information
         with open('dataset_split.json', 'r') as f:
@@ -88,7 +88,7 @@ class Nutrition5KDataset(Dataset):
                 continue
                 
             nutritional_values = nutritional_values.iloc[0][[
-                'total_calories', 'total_mass', 'total_fat', 'total_carb', 'total_protein'
+                'total_mass', 'total_fat', 'total_carb', 'total_protein'
             ]].values.astype(float)
             
             samples.append({
@@ -109,9 +109,10 @@ class Nutrition5KDataset(Dataset):
         rgb_image = Image.open(sample['rgb_path'])
         depth_image = Image.open(sample['depth_path'])
         
-        if self.transform:
-            rgb_image = self.transform(rgb_image)
-            depth_image = self.transform(depth_image)
+        if self.rgb_transform:
+            rgb_image = self.rgb_transform(rgb_image)
+        if self.depth_transform:
+            depth_image = self.depth_transform(depth_image)
         
         nutritional_values = torch.tensor(sample['nutritional_values'], dtype=torch.float32)
         
