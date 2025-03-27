@@ -14,8 +14,8 @@ class Trainer:
         self.val_loader = val_loader
         self.device = device
         
-        self.loss = NutritionLoss()
-        # self.loss = MSELoss()
+        # self.loss = NutritionLoss()
+        self.loss = MSELoss()
         self.optimizer = optim.AdamW(
             model.parameters(), 
             lr=learning_rate, 
@@ -96,8 +96,10 @@ class Trainer:
         self.model.eval()
         val_loss = 0.0
         
+        progress_bar = tqdm(self.val_loader, desc="Validation")
+        
         with torch.no_grad():
-            for batch in self.val_loader:
+            for batch in progress_bar:
                 rgb_images = batch['rgb_image'].to(self.device)
                 depth_images = batch['depth_image'].to(self.device)
                 targets = batch['nutritional_values'].to(self.device)
@@ -105,6 +107,8 @@ class Trainer:
                 outputs = self.model(rgb_images, depth_images)
                 loss = self.loss(outputs, targets)
                 val_loss += loss.item()
+                
+                progress_bar.set_postfix({'loss': loss.item()})
         
         avg_val_loss = val_loss / len(self.val_loader)
         self.val_loss_history.append(avg_val_loss)

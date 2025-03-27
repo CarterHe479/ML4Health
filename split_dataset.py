@@ -33,4 +33,4 @@ def save_dataset_split(root_dir, n_samples=1000, test_ratio=0.2, random_seed=42)
 
 if __name__ == '__main__':
     root_dir = '/Users/liwuchen/Documents/nutrition5k_dataset'
-    save_dataset_split(root_dir, n_samples=500, test_ratio=0.2)
+    save_dataset_split(root_dir, n_samples=3000, test_ratio=0.2)

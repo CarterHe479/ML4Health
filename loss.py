@@ -8,7 +8,10 @@ class MSELoss(nn.Module):
         self.mse_loss = nn.MSELoss()
     
     def forward(self, outputs, targets):
-        return self.mse_loss(outputs, targets)
+        diff = outputs - targets
+        diff[:, 0] = diff[:, 0] / 10
+        # Return mean of squared differences
+        return (diff ** 2).mean()
 
 class NutritionLoss(nn.Module):
     def __init__(self, initial_scales=None):

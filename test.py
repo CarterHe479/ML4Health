@@ -43,14 +43,18 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=4)
     
     # Test the model
-    # criterion = NutritionLoss()
     criterion = MSELoss()
     test_loss = 0.0
     all_outputs = []
     all_targets = []
     
+    # For sample predictions
+    sample_indices = [0, 1, 2]  # First 3 samples
+    sample_outputs = []
+    sample_targets = []
+    
     with torch.no_grad():
-        for batch in test_loader:
+        for i, batch in enumerate(test_loader):
             rgb_images = batch['rgb_image'].to(device)
             depth_images = batch['depth_image'].to(device)
             targets = batch['nutritional_values'].to(device)
@@ -62,6 +66,11 @@ def main():
             # Store for metrics calculation
             all_outputs.append(outputs.cpu())
             all_targets.append(targets.cpu())
+            
+            # Store first 3 samples for comparison
+            if i == 0:  # Only need first batch to get 3 samples
+                sample_outputs = outputs.cpu()[:3]
+                sample_targets = targets.cpu()[:3]
     
     # Calculate metrics
     avg_test_loss = test_loss / len(test_loader)
@@ -78,6 +87,17 @@ def main():
     logging.info(f"Fat: {maes[1]:.2f}g")
     logging.info(f"Carbs: {maes[2]:.2f}g")
     logging.info(f"Protein: {maes[3]:.2f}g")
+    
+    # Log sample predictions
+    logging.info("\nSample Predictions vs Ground Truth:")
+    nutrition_labels = ['Mass (g)', 'Fat (g)', 'Carbs (g)', 'Protein (g)']
+    for i in range(3):
+        logging.info(f"\nSample {i+1}:")
+        for j in range(4):
+            pred = sample_outputs[i][j].item()
+            true = sample_targets[i][j].item()
+            diff = abs(pred - true)
+            logging.info(f"{nutrition_labels[j]}: Predicted: {pred:.2f}, True: {true:.2f}, Difference: {diff:.2f}")
     
     # Save predictions
     np.save('test_outputs.npy', all_outputs.numpy())
