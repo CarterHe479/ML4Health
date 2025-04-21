@@ -4,18 +4,29 @@ from tqdm import tqdm
 import logging
 import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from loss import NutritionLoss, MSELoss
 
 class Trainer:
-    def __init__(self, model, train_loader, val_loader, device='cpu', 
-                 learning_rate=1e-4, weight_decay=1e-5):
+    def __init__(self, model, train_loader, val_loader, loss, device=torch.device('cpu'), 
+                 learning_rate=1e-4, weight_decay=1e-5, use_depth=True):
+        """
+        Args:
+            model: The model to train.
+            train_loader: DataLoader for training data.
+            val_loader: DataLoader for validation data.
+            device: Device to run the model on.
+            learning_rate: Learning rate for the optimizer.
+            weight_decay: Weight decay for the optimizer.
+            use_depth: Whether to use depth images in training.
+        """
         self.model = model.to(device)
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.device = device
+        self.use_depth = use_depth
         
         # self.loss = NutritionLoss()
-        self.loss = MSELoss()
+        # self.loss = MSELoss()
+        self.loss = loss
         self.optimizer = optim.AdamW(
             model.parameters(), 
             lr=learning_rate, 
@@ -75,12 +86,15 @@ class Trainer:
         progress_bar = tqdm(self.train_loader, desc=f"Epoch {epoch}")
         
         for batch in progress_bar:
-            rgb_images = batch['rgb_image'].to(self.device)
-            depth_images = batch['depth_image'].to(self.device)
+            rgb_images = batch['rgb_image'].to(self.device)                
             targets = batch['nutritional_values'].to(self.device)
             
             self.optimizer.zero_grad()
-            outputs = self.model(rgb_images, depth_images)
+            if self.use_depth:
+                depth_images = batch['depth_image'].to(self.device)
+                outputs = self.model(rgb_images, depth_images)
+            else:
+                outputs = self.model(rgb_images)
             loss = self.loss(outputs, targets)
             loss.backward()
             self.optimizer.step()
@@ -101,10 +115,14 @@ class Trainer:
         with torch.no_grad():
             for batch in progress_bar:
                 rgb_images = batch['rgb_image'].to(self.device)
-                depth_images = batch['depth_image'].to(self.device)
+                
                 targets = batch['nutritional_values'].to(self.device)
                 
-                outputs = self.model(rgb_images, depth_images)
+                if self.use_depth:
+                    depth_images = batch['depth_image'].to(self.device)
+                    outputs = self.model(rgb_images, depth_images)
+                else:
+                    outputs = self.model(rgb_images)
                 loss = self.loss(outputs, targets)
                 val_loss += loss.item()
                 

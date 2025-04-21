@@ -5,6 +5,8 @@ from model import ResNet51
 from train import Trainer
 import logging
 from utils import setup_logging, get_device
+from loss import NutritionLoss, MSELoss, MSEMultiTaskLoss
+from multi_task_model import MultiTaskModel, get_base_model
 
 def get_transforms():
     # RGB normalization (ImageNet stats)
@@ -54,19 +56,26 @@ def main():
     val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False, num_workers=4)
     
     # Initialize model and trainer
-    model = ResNet51()
+    # model = ResNet51().to(device)
+    base_model = get_base_model()
+    in_features = 512  # for resnet18
+    portion_independent = False
+    model = MultiTaskModel(base_model, in_features, portion_independent=portion_independent).to(device)
+
     trainer = Trainer(
         model=model,
         train_loader=train_loader,
         val_loader=val_loader,
         device=device,
+        loss = MSEMultiTaskLoss(portion_independent),
         learning_rate=1e-4,
-        weight_decay=1e-5
+        weight_decay=1e-5,
+        use_depth=False,
     )
     
     # Train the model
     logging.info("Starting training...")
-    trainer.train(num_epochs=100)
+    trainer.train(num_epochs=10)
     logging.info("Training completed")
 
 if __name__ == '__main__':
