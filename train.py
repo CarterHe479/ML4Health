@@ -77,7 +77,7 @@ class Trainer:
         plt.grid(True, linestyle='--', alpha=0.7)
         plt.legend(fontsize=12)
         plt.tight_layout()
-        plt.savefig('loss_curves_final.png', dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(self.work_dir, 'loss_curves_final.png'), dpi=300, bbox_inches='tight')
         plt.close()
         
     def train_epoch(self, epoch):
