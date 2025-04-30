@@ -1,7 +1,6 @@
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from data_loader import Nutrition5KDataset
-from model import ResNet51
 from train import Trainer
 import logging
 from utils import setup_logging, get_device
@@ -35,7 +34,7 @@ def main():
     
     # Load datasets
     logging.info("Loading datasets...")
-    root_dir = '/Users/liwuchen/Documents/nutrition5k_dataset'
+    root_dir = '../nutrition5k_dataset'
     
     train_dataset = Nutrition5KDataset(
         root_dir=root_dir,
@@ -71,11 +70,12 @@ def main():
         learning_rate=1e-4,
         weight_decay=1e-5,
         use_depth=False,
+        work_dir = 'multi_task_model'
     )
     
     # Train the model
     logging.info("Starting training...")
-    trainer.train(num_epochs=10)
+    trainer.train(num_epochs=500)
     logging.info("Training completed")
 
 if __name__ == '__main__':

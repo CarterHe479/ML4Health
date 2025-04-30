@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from data_loader import Nutrition5KDataset
-from model import ResNet51
+from rgb_depth_model import ResNet51
 from loss import NutritionLoss, MSELoss
 import logging
 import numpy as np

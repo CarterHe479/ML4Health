@@ -6,3 +6,5 @@ data/
 *.pth
 *.log
 *.npy
+multi_task_model/
+rgb_depth_model/

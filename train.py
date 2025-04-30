@@ -4,10 +4,11 @@ from tqdm import tqdm
 import logging
 import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+import os
 
 class Trainer:
     def __init__(self, model, train_loader, val_loader, loss, device=torch.device('cpu'), 
-                 learning_rate=1e-4, weight_decay=1e-5, use_depth=True):
+                 learning_rate=1e-4, weight_decay=1e-5, use_depth=True, work_dir='./'):
         """
         Args:
             model: The model to train.
@@ -23,9 +24,8 @@ class Trainer:
         self.val_loader = val_loader
         self.device = device
         self.use_depth = use_depth
+        self.work_dir = work_dir
         
-        # self.loss = NutritionLoss()
-        # self.loss = MSELoss()
         self.loss = loss
         self.optimizer = optim.AdamW(
             model.parameters(), 
@@ -147,8 +147,8 @@ class Trainer:
                     f"Val Loss: {val_loss:.4f} | "
                     f"LR: {self.optimizer.param_groups[0]['lr']:.2e}"
                 )
-                
-                torch.save(self.model.state_dict(), 'last_model.pth')
+                os.makedirs(self.work_dir, exist_ok=True)
+                torch.save(self.model.state_dict(), os.path.join(self.work_dir, 'latest.pth'))
                 
                 if val_loss < self.best_val_loss:
                     self.best_val_loss = val_loss
@@ -156,7 +156,7 @@ class Trainer:
                         'model_state_dict': self.model.state_dict(),
                         'val_loss': val_loss,
                         'epoch': epoch
-                    }, 'best_model.pth')
+                    }, os.path.join(self.work_dir, 'best_model.pth'))
                     logging.info(f"New best model saved with val loss: {val_loss:.4f}")
         
         finally:
