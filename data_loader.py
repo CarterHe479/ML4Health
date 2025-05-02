@@ -95,17 +95,30 @@ class Nutrition5KDataset(Dataset):
         side_images = []
         for cam_name in self.side_camera_names:
             video_path = os.path.join(dish_folder, cam_name)
-            # print(video_path)
             side_frame = self._load_side_frame(video_path)
             side_images.append(side_frame)
-        side_images = torch.stack(side_images)  # Shape: [4, 3, 480, 640]
+        side_images = torch.stack(side_images)  # [4, 3, 480, 640]
+
+        # 选择一个 side 图像（例如 camera_A）
+        side_image = side_images[0]  # [3, 480, 640]
+
+        # 拼接 RGB + side => [6, 480, 640]
+        rgb_side_image = torch.cat([rgb_image, side_image], dim=0)
+
+        # 获取标签
+        meta_row = self.metadata[self.metadata['id'] == int(dish_id)]
+        if meta_row.empty:
+            raise ValueError(f"Dish ID {dish_id} not found in metadata.")
+        nutrition = meta_row.iloc[0][['fat_g', 'carb_g', 'protein_g', 'kcal']].values.astype(np.float32)
+        nutrition = torch.tensor(nutrition)
 
         return {
-            "rgb": rgb_image,
-            "depth": depth_image,
-            "side_images": side_images,
+            "rgb_side": rgb_side_image,   # [6, 480, 640]
+            "depth": depth_image,         # [1, 480, 640]
+            "label": nutrition,           # [4]
             "dish_id": dish_id
         }
+
 
     def __len__(self):
         return len(self.samples)
@@ -133,7 +146,8 @@ dataset = Nutrition5KDataset(
 # Load one sample
 sample = dataset[0]
 
-print("RGB shape:", sample["rgb"].shape)           # [3, 480, 640]
-print("Depth shape:", sample["depth"].shape)       # [1, 480, 640]
-print("Side images shape:", sample["side_images"].shape)  # [4, 3, 480, 640]
+print("RGB+Side shape:", sample["rgb_side"].shape)  # [6, 480, 640]
+print("Depth shape:", sample["depth"].shape)        # [1, 480, 640]
+print("Label:", sample["label"])                    # [fat, carb, protein, kcal]
 print("Dish ID:", sample["dish_id"])
+
