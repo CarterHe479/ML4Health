@@ -34,7 +34,7 @@ def main():
     
     # Load datasets
     logging.info("Loading datasets...")
-    root_dir = '../nutrition5k_dataset'
+    root_dir = './nutrition5k_dataset'
     
     train_dataset = Nutrition5KDataset(
         root_dir=root_dir,
