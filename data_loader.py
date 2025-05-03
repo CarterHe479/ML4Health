@@ -43,7 +43,7 @@ class Nutrition5KDataset(Dataset):
         ]
         df_list = []
         for path in metadata_paths:
-            df = pd.read_csv(path, header=None)
+            df = pd.read_csv(path, header=None, on_bad_lines='warn')
             df_list.append(df.iloc[:, :6])
         metadata = pd.concat(df_list, ignore_index=True)
         metadata.columns = ['id', 'fat_g', 'carb_g', 'protein_g', 'mass_g', 'kcal']
@@ -71,53 +71,59 @@ class Nutrition5KDataset(Dataset):
         self.side_frame_cache[video_path] = frame
         return frame
 
-    def __getitem__(self, idx):
-        sample = self.samples[idx]
-        rgb_path = sample["rgb"]
-        depth_path = sample["depth"]
-        dish_id = sample["dish_id"]
+        def __getitem__(self, idx):
+            sample = self.samples[idx]
+            rgb_path = sample["rgb"]
+            depth_path = sample["depth"]
+            dish_id = sample["dish_id"]
 
-        rgb_image = Image.open(rgb_path).convert("RGB")
-        depth_image = Image.open(depth_path).convert("L")
+            # 1️⃣ Load RGB and depth as PIL
+            rgb_image = Image.open(rgb_path).convert("RGB")
+            depth_image = Image.open(depth_path).convert("L")
 
-        if self.rgb_transform:
-            rgb_image = self.rgb_transform(rgb_image)
-        else:
-            rgb_image = torch.from_numpy(np.array(rgb_image)).permute(2, 0, 1).float() / 255.0
+            # 2️⃣ Load side camera frames
+            dish_folder = os.path.join(self.root_dir, "imagery", "realsense_overhead", dish_id)
+            side_images = []
+            for cam_name in self.side_camera_names:
+                video_path = os.path.join(dish_folder, cam_name)
+                side_frame = self._load_side_frame(video_path)
+                side_images.append(side_frame)
+            side_images = torch.stack(side_images)  # [4, 3, 480, 640]
 
-        if self.depth_transform:
-            depth_image = self.depth_transform(depth_image)
-        else:
-            depth_image = torch.from_numpy(np.array(depth_image)).unsqueeze(0).float() / 255.0
+            # 3️⃣ 选择一个 side 图像（例如 camera_A）
+            side_image = side_images[0]  # [3, 480, 640]
 
-        # Load side camera frames
-        dish_folder = os.path.join(self.root_dir, "imagery", "realsense_overhead", dish_id)
-        side_images = []
-        for cam_name in self.side_camera_names:
-            video_path = os.path.join(dish_folder, cam_name)
-            side_frame = self._load_side_frame(video_path)
-            side_images.append(side_frame)
-        side_images = torch.stack(side_images)  # [4, 3, 480, 640]
+            # 4️⃣ 转为 tensor（手动）
+            rgb_tensor = torch.from_numpy(np.array(rgb_image)).permute(2, 0, 1).float() / 255.0
+            # side_image 已经是 tensor
 
-        # 选择一个 side 图像（例如 camera_A）
-        side_image = side_images[0]  # [3, 480, 640]
+            # 5️⃣ 拼接 RGB + side => [6, 480, 640]
+            rgb_side_image = torch.cat([rgb_tensor, side_image], dim=0)
 
-        # 拼接 RGB + side => [6, 480, 640]
-        rgb_side_image = torch.cat([rgb_image, side_image], dim=0)
+            # 6️⃣ Apply transform AFTER concat
+            if self.rgb_transform:
+                rgb_side_image = self.rgb_transform(rgb_side_image)
 
-        # 获取标签
-        meta_row = self.metadata[self.metadata['id'] == int(dish_id)]
-        if meta_row.empty:
-            raise ValueError(f"Dish ID {dish_id} not found in metadata.")
-        nutrition = meta_row.iloc[0][['fat_g', 'carb_g', 'protein_g', 'kcal']].values.astype(np.float32)
-        nutrition = torch.tensor(nutrition)
+            # 7️⃣ Transform depth
+            if self.depth_transform:
+                depth_image = self.depth_transform(depth_image)
+            else:
+                depth_image = torch.from_numpy(np.array(depth_image)).unsqueeze(0).float() / 255.0
 
-        return {
-            "rgb_side": rgb_side_image,   # [6, 480, 640]
-            "depth": depth_image,         # [1, 480, 640]
-            "label": nutrition,           # [4]
-            "dish_id": dish_id
-        }
+            # 8️⃣ 获取标签
+            meta_row = self.metadata[self.metadata['id'] == int(dish_id)]
+            if meta_row.empty:
+                raise ValueError(f"Dish ID {dish_id} not found in metadata.")
+            nutrition = meta_row.iloc[0][['fat_g', 'carb_g', 'protein_g', 'kcal']].values.astype(np.float32)
+            nutrition = torch.tensor(nutrition)
+
+            return {
+                "rgb_side": rgb_side_image,   # [6, 480, 640]
+                "depth": depth_image,         # [1, 480, 640]
+                "label": nutrition,           # [4]
+                "dish_id": dish_id
+            }
+
 
 
     def __len__(self):
