@@ -124,30 +124,31 @@ class Nutrition5KDataset(Dataset):
         return len(self.samples)
 
 
-from torchvision import transforms
+# For testing the dataset class
+# from torchvision import transforms
 
-# Define basic transforms if needed
-rgb_transform = transforms.Compose([
-    transforms.ToTensor(),
-])
+# # Define basic transforms if needed
+# rgb_transform = transforms.Compose([
+#     transforms.ToTensor(),
+# ])
 
-depth_transform = transforms.Compose([
-    transforms.ToTensor(),
-])
+# depth_transform = transforms.Compose([
+#     transforms.ToTensor(),
+# ])
 
-# Initialize dataset
-dataset = Nutrition5KDataset(
-    root_dir="~/Documents/nutrition5k_dataset",  # adjust if needed
-    split="train",
-    rgb_transform=rgb_transform,
-    depth_transform=depth_transform
-)
+# # Initialize dataset
+# dataset = Nutrition5KDataset(
+#     root_dir="~/Documents/nutrition5k_dataset",  # adjust if needed
+#     split="train",
+#     rgb_transform=rgb_transform,
+#     depth_transform=depth_transform
+# )
 
-# Load one sample
-sample = dataset[0]
+# # Load one sample
+# sample = dataset[0]
 
-print("RGB+Side shape:", sample["rgb_side"].shape)  # [6, 480, 640]
-print("Depth shape:", sample["depth"].shape)        # [1, 480, 640]
-print("Label:", sample["label"])                    # [fat, carb, protein, kcal]
-print("Dish ID:", sample["dish_id"])
+# print("RGB+Side shape:", sample["rgb_side"].shape)  # [6, 480, 640]
+# print("Depth shape:", sample["depth"].shape)        # [1, 480, 640]
+# print("Label:", sample["label"])                    # [fat, carb, protein, kcal]
+# print("Dish ID:", sample["dish_id"])
 
