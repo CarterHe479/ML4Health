@@ -5,33 +5,35 @@ from train import Trainer
 import logging
 from utils import setup_logging, get_device
 from loss import MSELoss
-from cross_attention_model import CrossAttentionNutritionModel
+from cross_attention_model import CrossAttentionNutritionModel  # 这里是你的模型
 
 def get_transforms():
-    # RGB+Side normalization (ImageNet stats) -> 6 channels
+    # ⚠️ 注意这里是 6 通道的拼接 (RGB + side) → 6 通道，Depth → 1 通道
     rgb_transform = transforms.Compose([
-        transforms.Resize((256, 256)),  # 👈⚠️ 这个是 PIL 用的，也需要改
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),  # 转成 [6, H, W] 或 [3, H, W] 后在 data_loader 里拼接
         transforms.Normalize(
-            mean=[0.485, 0.456, 0.406, 0.485, 0.456, 0.406],
+            mean=[0.485, 0.456, 0.406, 0.485, 0.456, 0.406], 
             std=[0.229, 0.224, 0.225, 0.229, 0.224, 0.225]
         )
     ])
-
-    # Depth normalization (single channel)
+    
     depth_transform = transforms.Compose([
-        transforms.Resize((256, 256)),  # 同理这个
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
         transforms.Normalize(mean=[0.5], std=[0.5])
     ])
+    
     return rgb_transform, depth_transform
 
 def main():
     setup_logging()
     device = get_device()
-
-    # Data transforms
+    
+    # Transforms
     rgb_transform, depth_transform = get_transforms()
     
-    # Load datasets
+    # Dataset
     logging.info("Loading datasets...")
     root_dir = './nutrition5k_dataset'
     
@@ -41,7 +43,6 @@ def main():
         rgb_transform=rgb_transform,
         depth_transform=depth_transform
     )
-    
     val_dataset = Nutrition5KDataset(
         root_dir=root_dir,
         split='val',
@@ -49,19 +50,19 @@ def main():
         depth_transform=depth_transform
     )
     
-    # Create data loaders
+    # Dataloaders
     train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False, num_workers=4)
     
-    # Initialize model
+    # CrossAttention Model
     model = CrossAttentionNutritionModel(
         backbone='resnet18',
         pretrained=True,
         num_heads=4,
         mlp_hidden=256
     ).to(device)
-
-    # Initialize trainer
+    
+    # Trainer
     trainer = Trainer(
         model=model,
         train_loader=train_loader,
@@ -74,7 +75,6 @@ def main():
         work_dir='cross_attention_model'
     )
     
-    # Train the model
     logging.info("Starting training...")
     trainer.train(num_epochs=500)
     logging.info("Training completed")
