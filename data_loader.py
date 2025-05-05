@@ -6,7 +6,8 @@ import torch
 from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 import cv2
-from numpy import np
+import numpy as np
+import torch.nn.functional as F
 
 class Nutrition5KDataset(Dataset):
     def __init__(self, root_dir, split='train', rgb_transform=None, depth_transform=None, val_ratio=0.2, random_seed=42):
@@ -114,9 +115,12 @@ class Nutrition5KDataset(Dataset):
         # Concat RGB + side
         rgb_side = torch.cat([rgb_tensor, side_frame], dim=0)  # [6, H, W]
 
-        # Apply rgb transform (resize + normalize)
-        if self.rgb_transform:
-            rgb_side = self.rgb_transform(rgb_side)
+        # ✅ Instead of self.rgb_transform:
+        rgb_side = F.interpolate(rgb_side.unsqueeze(0), size=(256, 256), mode='bilinear', align_corners=False).squeeze(0)
+
+        mean = torch.tensor([0.485, 0.456, 0.406, 0.485, 0.456, 0.406]).view(-1, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225, 0.229, 0.224, 0.225]).view(-1, 1, 1)
+        rgb_side = (rgb_side - mean) / std
 
         # Depth image
         depth_image = Image.open(sample['depth_path']).convert('L')

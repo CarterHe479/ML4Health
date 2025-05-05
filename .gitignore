@@ -8,3 +8,4 @@ data/
 *.npy
 multi_task_model/
 rgb_depth_model/
+nutrition5k_dataset/

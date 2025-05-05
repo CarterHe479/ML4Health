@@ -56,6 +56,7 @@ class Trainer:
 
     def _update_plot(self):
         """Generate and save a fresh static plot each epoch"""
+        os.makedirs(self.work_dir, exist_ok=True)  # ✅ 确保目录存在
         plt.figure(figsize=(10, 6))
         plt.plot(
             range(1, len(self.train_loss_history) + 1),
@@ -86,8 +87,8 @@ class Trainer:
         progress_bar = tqdm(self.train_loader, desc=f"Epoch {epoch}")
         
         for batch in progress_bar:
-            rgb_images = batch['rgb_image'].to(self.device)                
-            targets = batch['nutritional_values'].to(self.device)
+            rgb_images = batch['rgb_side'].to(self.device)                
+            targets = batch['nutrition'].to(self.device)
             
             self.optimizer.zero_grad()
             if self.use_depth:
@@ -114,9 +115,9 @@ class Trainer:
         
         with torch.no_grad():
             for batch in progress_bar:
-                rgb_images = batch['rgb_image'].to(self.device)
+                rgb_images = batch['rgb_side'].to(self.device)
                 
-                targets = batch['nutritional_values'].to(self.device)
+                targets = batch['nutrition'].to(self.device)
                 
                 if self.use_depth:
                     depth_images = batch['depth_image'].to(self.device)

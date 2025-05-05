@@ -40,8 +40,8 @@ def main():
     train_dataset = Nutrition5KDataset(
         root_dir=root_dir,
         split='train',
-        rgb_transform=rgb_transform,
-        depth_transform=depth_transform
+        rgb_transform=None,
+        depth_transform=None
     )
     val_dataset = Nutrition5KDataset(
         root_dir=root_dir,
