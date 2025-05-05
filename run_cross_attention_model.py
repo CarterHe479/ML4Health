@@ -10,22 +10,18 @@ from cross_attention_model import CrossAttentionNutritionModel
 def get_transforms():
     # RGB+Side normalization (ImageNet stats) -> 6 channels
     rgb_transform = transforms.Compose([
-    transforms.Resize((256, 256)),
-    transforms.ToTensor(),
-    transforms.Normalize(
-        mean=[0.485, 0.456, 0.406, 0.485, 0.456, 0.406], 
-        std=[0.229, 0.224, 0.225, 0.229, 0.224, 0.225]
+        transforms.Resize((256, 256)),  # 👈⚠️ 这个是 PIL 用的，也需要改
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406, 0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225, 0.229, 0.224, 0.225]
         )
     ])
 
-    
     # Depth normalization (single channel)
     depth_transform = transforms.Compose([
-        transforms.Resize((256, 256)),
-        transforms.ToTensor(),
+        transforms.Resize((256, 256)),  # 同理这个
         transforms.Normalize(mean=[0.5], std=[0.5])
     ])
-    
     return rgb_transform, depth_transform
 
 def main():
