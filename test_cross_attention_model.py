@@ -75,6 +75,39 @@ def evaluate_model(model, data_loader, device):
         results_df[f'{nutrient}_abs_error'] = abs(results_df[f'{nutrient}_error'])
     return metrics, results_df, {'predictions': all_predictions, 'targets': all_targets}
 
+def visualize_predictions(results_df, vis_dir):
+    nutrients = ['mass', 'fat', 'carbs', 'protein']
+    for nutrient in nutrients:
+        true_vals = results_df[f'{nutrient}_true']
+        pred_vals = results_df[f'{nutrient}_pred']
+        error_vals = results_df[f'{nutrient}_error']
+
+        # 1️⃣ Scatter plot: Prediction vs Ground Truth
+        plt.figure(figsize=(6, 6))
+        plt.scatter(true_vals, pred_vals, alpha=0.5)
+        plt.plot([true_vals.min(), true_vals.max()], [true_vals.min(), true_vals.max()], 'r--', lw=2)
+        plt.xlabel(f'True {nutrient.capitalize()} (g)', fontsize=12)
+        plt.ylabel(f'Predicted {nutrient.capitalize()} (g)', fontsize=12)
+        plt.title(f'{nutrient.capitalize()}: Prediction vs Ground Truth', fontsize=14)
+        plt.grid(True, linestyle='--', alpha=0.5)
+        plt.tight_layout()
+        save_path = os.path.join(vis_dir, f'{nutrient}_scatter.png')
+        plt.savefig(save_path, dpi=300)
+        plt.close()
+
+        # 2️⃣ Error histogram
+        plt.figure(figsize=(6, 4))
+        plt.hist(error_vals, bins=30, color='orange', alpha=0.7, edgecolor='black')
+        plt.xlabel(f'{nutrient.capitalize()} Prediction Error (g)', fontsize=12)
+        plt.ylabel('Frequency', fontsize=12)
+        plt.title(f'{nutrient.capitalize()}: Prediction Error Distribution', fontsize=14)
+        plt.grid(True, linestyle='--', alpha=0.5)
+        plt.tight_layout()
+        save_path = os.path.join(vis_dir, f'{nutrient}_error_hist.png')
+        plt.savefig(save_path, dpi=300)
+        plt.close()
+
+
 def main():
     setup_logging()
     device = get_device()
@@ -119,9 +152,11 @@ def main():
 
     results_df.to_csv(os.path.join(results_dir, 'all_predictions.csv'), index=False)
 
-    # (Optionally you can copy `visualize_predictions` and `analyze_worst_predictions` from the previous script if needed)
+    # 新增: 可视化
+    logging.info("Generating visualizations...")
+    visualize_predictions(results_df, vis_dir)
 
-    logging.info(f"Evaluation complete. Results saved to {results_dir}")
+    logging.info(f"Evaluation complete. Results and visualizations saved to {results_dir}")
 
 if __name__ == '__main__':
     main()
